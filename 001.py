@@ -45,7 +45,7 @@ canvas.configure(bg='yellow')
 canvas.pack()
 tk.update()
 
-paddle = Paddle(canvas, 'red')
+paddle = Paddle(canvas, 'white')
 ball = Ball(canvas, 'green')
 
 canvas.bind("<Motion>", paddle.draw)
