@@ -144,10 +144,17 @@
         }
 
         // Отправка накопленного монолитного Blob на бэкенд
+
+    // Отправка накопленного монолитного Blob на бэкенд
         async function sendAudioToVDS(audioBlob) {
-            // ИСПРАВЛЕНО: Включаем спиннер, но НЕ затираем resultArea.value новой строкой!
-            loading.classList.remove('hidden');
-            resultArea.classList.add('hidden');
+            // Включаем индикацию загрузки КРАСИВО и БЕЗОПАСНО для текста:
+            loading.classList.remove('hidden');       // Показываем спиннер
+            resultArea.classList.add('opacity-50');    // Делаем поле полупрозрачным
+            resultArea.disabled = true;                // Блокируем ввод на время запроса
+
+            // Сохраняем текущий текст в константу ДО каких-либо манипуляций
+            const textBeforeUpload = resultArea.value;
+            console.log('[FRONTEND] Текст в окне до загрузки:', textBeforeUpload);
 
             const formData = new FormData();
             formData.append('file', audioBlob, 'record.webm'); 
@@ -166,27 +173,30 @@
                 const data = await response.json();
                 console.log('Ответ системы:', data);
                 
-                if (data.raw_text) {
-                    // ИСПРАВЛЕНО: используем trim() для проверки пустоты поля
-                    const currentText = resultArea.value.trim();
+                if (data.raw_text && data.raw_text.trim() !== "") {
+                    const cleanOldText = textBeforeUpload.trim();
+                    const newChunk = data.raw_text.trim();
                     
-                    if (currentText === "") {
-                        resultArea.value = data.raw_text;
+                    if (cleanOldText === "") {
+                        resultArea.value = newChunk;
                     } else {
-                        // Добавляем новую реплику через пробел, формируя один сплошной текст для LLM
-                        resultArea.value = currentText + " " + data.raw_text;
+                        // Жесткое склеивание через пробел
+                        resultArea.value = cleanOldText + " " + newChunk;
                     }
                 } else {
-                    console.warn("Сервер вернул пустую строку для этого куска.");
+                    console.warn("Сервер вернул пустую строку. Восстанавливаем старый текст.");
+                    resultArea.value = textBeforeUpload;
                 }
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                // В случае ошибки выводим её, сохраняя старый текст
-                resultArea.value += `\n[Ошибка обработки: ${error.message}]`;
+                // Если сервер упал, возвращаем старый текст и дописываем ошибку в скобках
+                resultArea.value = textBeforeUpload + `\n[Ошибка обработки: ${error.message}]`;
             } finally {
+                // Возвращаем интерфейс в исходное рабочее состояние
                 loading.classList.add('hidden');
-                resultArea.classList.remove('hidden');
+                resultArea.classList.remove('opacity-50');
+                resultArea.disabled = false;
                 statusText.innerText = 'Нажмите, чтобы начать запись';
             }
         }
