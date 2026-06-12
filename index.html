@@ -68,7 +68,7 @@
         </div>
     </main>
 
-    <script>
+<script>
         // Адрес VDS-сервера
         const API_URL = 'https://185.105.109.72/process-audio';
 
@@ -94,40 +94,33 @@
             }
         });
 
-async function startRecording() {
-            audioChunks = []; // Очищаем буфер перед новой записью
+        async function startRecording() {
+            audioChunks = []; // Очищаем буфер аудио перед новой записью
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 
-                // Важно: пишем в стандартный webm
                 mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
 
-                // Этот обработчик сработает ОДИН РАЗ, когда мы вызовем stop()
                 mediaRecorder.ondataavailable = event => {
                     if (event.data.size > 0) {
                         audioChunks.push(event.data);
                     }
                 };
 
-                // Когда запись полностью остановлена — собираем монолит и шлем на VDS
                 mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     console.log(`[FRONTEND] Запись завершена. Размер файла: ${(audioBlob.size / 1024).toFixed(1)} Кб`);
                     await sendAudioToVDS(audioBlob);
                 };
 
-                // ВАЖНО: вызываем start() БЕЗ аргументов времени (например, без 1000).
-                // Это запрещает браузеру нарезать файл на куски в процессе диктовки.
                 mediaRecorder.start();
                 isRecording = true;
                 
-                // Визуал кнопки записи
                 recordBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
                 recordBtn.classList.add('bg-red-500', 'hover:bg-red-600', 'recording');
                 statusText.innerText = 'Идет накопление записи... Нажмите еще раз для отправки';
                 statusText.classList.add('text-red-500');
                 
-                // Таймер
                 timerElement.classList.remove('hidden');
                 startTime = Date.now();
                 timerInterval = setInterval(updateTimer, 1000);
@@ -139,11 +132,9 @@ async function startRecording() {
         }
 
         function stopRecording() {
-            // Останавливаем захват с микрофона. Это принудительно вызовет триггер mediaRecorder.onstop
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
             isRecording = false;
 
-            // Сброс визуала
             recordBtn.classList.remove('bg-red-500', 'hover:bg-red-600', 'recording');
             recordBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
             statusText.innerText = 'Нажмите, чтобы начать запись';
@@ -154,13 +145,11 @@ async function startRecording() {
 
         // Отправка накопленного монолитного Blob на бэкенд
         async function sendAudioToVDS(audioBlob) {
-            // Включаем спиннер, прячем старый текст
+            // ИСПРАВЛЕНО: Включаем спиннер, но НЕ затираем resultArea.value новой строкой!
             loading.classList.remove('hidden');
             resultArea.classList.add('hidden');
-            resultArea.value = ""; 
 
             const formData = new FormData();
-            // Шлем как один цельный файл record.webm
             formData.append('file', audioBlob, 'record.webm'); 
 
             try {
@@ -174,35 +163,34 @@ async function startRecording() {
                     throw new Error(`Ошибка сервера: ${response.status}`);
                 }
 
-                
-const data = await response.json();
+                const data = await response.json();
                 console.log('Ответ системы:', data);
                 
                 if (data.raw_text) {
-                    // НАКОПЛЕНИЕ: если в поле уже есть текст, добавляем перенос строки и новую реплику
-                    if (resultArea.value.strip === "") {
+                    // ИСПРАВЛЕНО: используем trim() для проверки пустоты поля
+                    const currentText = resultArea.value.trim();
+                    
+                    if (currentText === "") {
                         resultArea.value = data.raw_text;
                     } else {
-                        // Добавляем с новой строки (или через пробел, как вам удобнее — сейчас сделано с новой строки)
-                        resultArea.value += (resultArea.value ? "\n" : "") + data.raw_text;
+                        // Добавляем новую реплику через пробел, формируя один сплошной текст для LLM
+                        resultArea.value = currentText + " " + data.raw_text;
                     }
                 } else {
                     console.warn("Сервер вернул пустую строку для этого куска.");
                 }
 
-                
             } catch (error) {
                 console.error('Ошибка:', error);
-                resultArea.value = `Ошибка обработки: ${error.message}`;
+                // В случае ошибки выводим её, сохраняя старый текст
+                resultArea.value += `\n[Ошибка обработки: ${error.message}]`;
             } finally {
-                // Возвращаем интерфейс в исходное состояние
                 loading.classList.add('hidden');
                 resultArea.classList.remove('hidden');
                 statusText.innerText = 'Нажмите, чтобы начать запись';
             }
         }
         
-        // Обновление таймера
         function updateTimer() {
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
             const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
@@ -210,12 +198,13 @@ const data = await response.json();
             timerElement.innerText = `${mins}:${secs}`;
         }
 
-        // Кнопка копирования
         document.getElementById('copyBtn').addEventListener('click', () => {
             resultArea.select();
             document.execCommand('copy');
             alert('Протокол скопирован в буфер обмена!');
         });
     </script>
+
+    
 </body>
 </html>
