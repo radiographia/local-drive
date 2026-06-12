@@ -174,14 +174,23 @@ async function startRecording() {
                     throw new Error(`Ошибка сервера: ${response.status}`);
                 }
 
-                const data = await response.json();
-                console.log('Ответ системы (накопленный дамп):', data);
+                
+const data = await response.json();
+                console.log('Ответ системы:', data);
                 
                 if (data.raw_text) {
-                    resultArea.value = data.raw_text; 
+                    // НАКОПЛЕНИЕ: если в поле уже есть текст, добавляем перенос строки и новую реплику
+                    if (resultArea.value.strip === "") {
+                        resultArea.value = data.raw_text;
+                    } else {
+                        // Добавляем с новой строки (или через пробел, как вам удобнее — сейчас сделано с новой строки)
+                        resultArea.value += (resultArea.value ? "\n" : "") + data.raw_text;
+                    }
                 } else {
-                    resultArea.value = "Сервер обработал файл, но текстовый дамп пуст.";
+                    console.warn("Сервер вернул пустую строку для этого куска.");
                 }
+
+                
             } catch (error) {
                 console.error('Ошибка:', error);
                 resultArea.value = `Ошибка обработки: ${error.message}`;
