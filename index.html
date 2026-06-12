@@ -143,19 +143,22 @@
         }
 
         // Отправка Blob на наш VDS
-        async function sendAudioToVDS(audioBlob) {
-    // audioBlob — это тот самый Blob, который вы получили из MediaRecorder (onstop)
-    
+async function sendAudioToVDS(audioBlob) {
+    const formData = new FormData();
+    // Имя ключа может быть любым, наш Python-код вырежет данные по разделителям
+    formData.append('file', audioBlob, 'record.webm'); 
+
     const response = await fetch('https://185.105.109.72/process-audio', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'audio/webm' // Явно говорим бэкенду, что это webm
-        },
-        body: audioBlob // ОТПРАВЛЯЕМ СЫРОЙ БЛОК БАЙТ, БЕЗ FORMDATA!
+        body: formData // Браузер сам выставит нужный Content-Type с WebKitFormBoundary
     });
 
     const data = await response.json();
-    console.log(data);
+    console.log('Ответ системы:', data);
+    
+    if (data.raw_text) {
+        document.getElementById('output-field').value = data.raw_text; 
+    }
 }
 
 
