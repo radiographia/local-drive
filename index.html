@@ -94,46 +94,56 @@
             }
         });
 
-        async function startRecording() {
-            audioChunks = [];
+async function startRecording() {
+            audioChunks = []; // Очищаем буфер перед новой записью
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // Важно: пишем в стандартный webm
                 mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
 
+                // Этот обработчик сработает ОДИН РАЗ, когда мы вызовем stop()
                 mediaRecorder.ondataavailable = event => {
-                    if (event.data.size > 0) audioChunks.push(event.data);
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
                 };
 
+                // Когда запись полностью остановлена — собираем монолит и шлем на VDS
                 mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    console.log(`[FRONTEND] Запись завершена. Размер файла: ${(audioBlob.size / 1024).toFixed(1)} Кб`);
                     await sendAudioToVDS(audioBlob);
                 };
 
+                // ВАЖНО: вызываем start() БЕЗ аргументов времени (например, без 1000).
+                // Это запрещает браузеру нарезать файл на куски в процессе диктовки.
                 mediaRecorder.start();
                 isRecording = true;
                 
-                // Изменение интерфейса при записи
+                // Визуал кнопки записи
                 recordBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
                 recordBtn.classList.add('bg-red-500', 'hover:bg-red-600', 'recording');
-                statusText.innerText = 'Идет запись... Нажмите еще раз для остановки';
+                statusText.innerText = 'Идет накопление записи... Нажмите еще раз для отправки';
                 statusText.classList.add('text-red-500');
                 
-                // Включение таймера
+                // Таймер
                 timerElement.classList.remove('hidden');
                 startTime = Date.now();
                 timerInterval = setInterval(updateTimer, 1000);
 
             } catch (err) {
                 console.error('Ошибка доступа к микрофону:', err);
-                alert('Не удалось получить доступ к микрофону. Убедитесь, что вы подтвердили SSL-сертификат по адресу ' + API_URL);
+                alert('Не удалось получить доступ к микрофону.');
             }
         }
 
         function stopRecording() {
+            // Останавливаем захват с микрофона. Это принудительно вызовет триггер mediaRecorder.onstop
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
             isRecording = false;
 
-            // Сброс интерфейса
+            // Сброс визуала
             recordBtn.classList.remove('bg-red-500', 'hover:bg-red-600', 'recording');
             recordBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
             statusText.innerText = 'Нажмите, чтобы начать запись';
@@ -142,16 +152,19 @@
             clearInterval(timerInterval);
         }
 
-        // Отправка аудио на сервер
+        // Отправка накопленного монолитного Blob на бэкенд
         async function sendAudioToVDS(audioBlob) {
-            // Включаем спиннер загрузки, временно скрываем текстовое поле
+            // Включаем спиннер, прячем старый текст
             loading.classList.remove('hidden');
             resultArea.classList.add('hidden');
+            resultArea.value = ""; 
 
             const formData = new FormData();
+            // Шлем как один цельный файл record.webm
             formData.append('file', audioBlob, 'record.webm'); 
 
             try {
+                statusText.innerText = 'Отправка файла на сервер...';
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: formData
@@ -162,21 +175,21 @@
                 }
 
                 const data = await response.json();
-                console.log('Ответ системы:', data);
+                console.log('Ответ системы (накопленный дамп):', data);
                 
                 if (data.raw_text) {
                     resultArea.value = data.raw_text; 
                 } else {
-                    resultArea.value = "Предупреждение: Сервер вернул пустой текст.";
+                    resultArea.value = "Сервер обработал файл, но текстовый дамп пуст.";
                 }
             } catch (error) {
-                console.error('Ошибка при отправке аудио:', error);
-                alert('Не удалось обработать аудиозапись.');
-                resultArea.value = `Ошибка: ${error.message}`;
+                console.error('Ошибка:', error);
+                resultArea.value = `Ошибка обработки: ${error.message}`;
             } finally {
-                // Выключаем спиннер и возвращаем поле на экран
+                // Возвращаем интерфейс в исходное состояние
                 loading.classList.add('hidden');
                 resultArea.classList.remove('hidden');
+                statusText.innerText = 'Нажмите, чтобы начать запись';
             }
         }
         
