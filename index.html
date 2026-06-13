@@ -3,7 +3,7 @@
 <head> 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система голосового протоколирования</title>
+    <title>Система голосового протоколирования — SayWord</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         .recording { animation: pulse 1.5s infinite; }
@@ -14,14 +14,14 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans flex flex-col">
 
     <header class="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-10 shadow-sm">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <div>
                     <h1 class="text-xl font-bold text-slate-900">Голосовое протоколирование</h1>
-                    <p class="text-xs text-slate-500">Автоматическое распознавание медицинской диктовки</p>
+                    <p class="text-xs text-slate-500">Автоматическое распознавание медицинской диктовки & ИИ-структурирование</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2 text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
@@ -31,10 +31,10 @@
         </div>
     </header>
 
-    <main class="max-w-5xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <main class="max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow">
         
-        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col items-center justify-center space-y-6 min-h-[300px]">
-            <h2 class="text-lg font-semibold text-slate-700 text-center">Управление диктовкой</h2>
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col items-center justify-center space-y-6 lg:h-[400px]">
+            <h2 class="text-md font-semibold text-slate-700 text-center uppercase tracking-wider">Запись речи</h2>
             
             <button id="recordBtn" class="w-24 h-24 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-all cursor-pointer focus:outline-none">
                 <svg id="micIcon" class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,34 +43,73 @@
             </button>
             
             <div class="text-center">
-                <p id="statusText" class="font-medium text-slate-600">Нажмите, чтобы начать запись</p>
+                <p id="statusText" class="font-medium text-slate-600 text-sm">Нажмите, чтобы начать запись</p>
                 <p id="timer" class="text-sm text-slate-400 mt-1 hidden">00:00</p>
             </div>
-        </div>
 
-        <div class="md:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h2 class="text-lg font-bold text-slate-900">Результат генерации ИИ</h2>
-                <button id="copyBtn" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
-                    Копировать протокол
-                </button>
-            </div>
-
-            <div id="loading" class="hidden flex-col items-center justify-center py-12 space-y-3 text-blue-600">
-                <svg class="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+            <div id="loading" class="hidden flex items-center space-x-2 text-blue-600">
+                <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span class="text-sm font-medium text-slate-500">Обработка и структурирование аудиозаписи...</span>
+                <span class="text-xs font-medium text-slate-500">Распознавание Wit.ai...</span>
+            </div>
+        </div>
+
+        <div class="lg:col-span-1 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider">1. Сырой драфт STT</h2>
+                <button id="copyBtn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded transition-colors cursor-pointer">
+                    Копировать
+                </button>
+            </div>
+            <textarea id="resultArea" class="w-full h-[320px] lg:h-full p-3 bg-slate-50 border border-slate-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 text-sm leading-relaxed font-mono" placeholder="Сюда складываются реплики. Текст можно свободно редактировать руками перед отправкой в ИИ..."></textarea>
+        </div>
+
+        <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col space-y-3 border-emerald-200 bg-emerald-50/10">
+            <div class="flex justify-between items-center border-b border-emerald-100 pb-2">
+                <h2 class="text-sm font-bold text-emerald-800 uppercase tracking-wider">2. Финальный протокол ИИ</h2>
+                <button id="copyFinalBtn" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded transition-colors cursor-pointer shadow-sm">
+                    Копировать бланк
+                </button>
             </div>
 
-            <textarea id="resultArea" class="w-full h-96 p-4 bg-slate-50 border border-slate-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 leading-relaxed font-mono" placeholder="Здесь появится структурированный медицинский протокол после завершения диктовки..."></textarea>
+            <div class="relative flex-grow flex flex-col">
+                <textarea id="finalProtocolArea" class="w-full h-[400px] lg:h-full p-4 bg-white border border-emerald-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-sm leading-relaxed font-mono shadow-inner" placeholder="Здесь появится структурированное академическое заключение экспертного уровня..."></textarea>
+                
+                <div id="aiLoading" class="hidden absolute inset-0 bg-white/80 border border-emerald-200 rounded-lg flex flex-col items-center justify-center space-y-3">
+                    <svg class="animate-spin h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm font-semibold text-emerald-800 animate-pulse">Gemma ИИ формирует протокол...</span>
+                </div>
+            </div>
+
+            <button id="generateBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-lg shadow-md transition-all cursor-pointer focus:outline-none text-sm uppercase tracking-wider">
+                Сгенерировать протокол ИИ
+            </button>
         </div>
     </main>
 
+    <footer class="bg-white border-t border-slate-200 py-3 px-6 text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div class="flex items-center space-x-4">
+                <div>Голосовой сервис: <span class="font-semibold text-slate-700" id="statWit">0 сек</span></div>
+                <div class="text-slate-300">|</div>
+                <div>Текстовый ИИ: <span class="font-semibold text-slate-700" id="statLLM">0 токенов (In/Out)</span></div>
+            </div>
+            <button id="refreshStatsBtn" class="text-blue-600 hover:underline cursor-pointer flex items-center space-x-1">
+                <span>🔄 Обновить статистику</span>
+            </button>
+        </div>
+    </footer>
+
 <script>
-        // Адрес VDS-сервера
+        // Эндпоинты нашего FastAPI бэкенда через sslip.io
         const API_URL = 'https://185-105-109-72.sslip.io/process-audio';
+        const GENERATE_URL = 'https://185-105-109-72.sslip.io/generate-protocol';
+        const STATS_URL = 'https://185-105-109-72.sslip.io/stats';
 
         let mediaRecorder;
         let audioChunks = [];
@@ -85,7 +124,19 @@
         const resultArea = document.getElementById('resultArea');
         const loading = document.getElementById('loading');
 
-        // Логика кнопки записи
+        // Новые элементы управления ИИ и статистики
+        const generateBtn = document.getElementById('generateBtn');
+        const aiLoading = document.getElementById('aiLoading');
+        const finalProtocolArea = document.getElementById('finalProtocolArea');
+        const copyFinalBtn = document.getElementById('copyFinalBtn');
+        const statWit = document.getElementById('statWit');
+        const statLLM = document.getElementById('statLLM');
+        const refreshStatsBtn = document.getElementById('refreshStatsBtn');
+
+        // Первичный запрос статистики при загрузке страницы
+        updateStatsFromServer();
+
+        // Логика кнопки записи аудио
         recordBtn.addEventListener('click', async () => {
             if (!isRecording) {
                 await startRecording();
@@ -95,10 +146,9 @@
         });
 
         async function startRecording() {
-            audioChunks = []; // Очищаем буфер аудио перед новой записью
+            audioChunks = [];
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
                 mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
 
                 mediaRecorder.ondataavailable = event => {
@@ -109,7 +159,7 @@
 
                 mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    console.log(`[FRONTEND] Запись завершена. Размер файла: ${(audioBlob.size / 1024).toFixed(1)} Кб`);
+                    console.log(`[FRONTEND] Запись завершена. Размер: ${(audioBlob.size / 1024).toFixed(1)} Кб`);
                     await sendAudioToVDS(audioBlob);
                 };
 
@@ -118,7 +168,7 @@
                 
                 recordBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
                 recordBtn.classList.add('bg-red-500', 'hover:bg-red-600', 'recording');
-                statusText.innerText = 'Идет накопление записи... Нажмите еще раз для отправки';
+                statusText.innerText = 'Идет накопление записи...';
                 statusText.classList.add('text-red-500');
                 
                 timerElement.classList.remove('hidden');
@@ -143,19 +193,13 @@
             clearInterval(timerInterval);
         }
 
-        // Отправка накопленного монолитного Blob на бэкенд
-
-    // Отправка накопленного монолитного Blob на бэкенд
+        // Отправка аудио на бэкенд (Wit.ai)
         async function sendAudioToVDS(audioBlob) {
-            // Включаем индикацию загрузки КРАСИВО и БЕЗОПАСНО для текста:
-            loading.classList.remove('hidden');       // Показываем спиннер
-            resultArea.classList.add('opacity-50');    // Делаем поле полупрозрачным
-            resultArea.disabled = true;                // Блокируем ввод на время запроса
+            loading.classList.remove('hidden');
+            resultArea.classList.add('opacity-50');
+            resultArea.disabled = true;
 
-            // Сохраняем текущий текст в константу ДО каких-либо манипуляций
             const textBeforeUpload = resultArea.value;
-            console.log('[FRONTEND] Текст в окне до загрузки:', textBeforeUpload);
-
             const formData = new FormData();
             formData.append('file', audioBlob, 'record.webm'); 
 
@@ -166,12 +210,9 @@
                     body: formData
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Ошибка сервера: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
 
                 const data = await response.json();
-                console.log('Ответ системы:', data);
                 
                 if (data.raw_text && data.raw_text.trim() !== "") {
                     const cleanOldText = textBeforeUpload.trim();
@@ -180,26 +221,113 @@
                     if (cleanOldText === "") {
                         resultArea.value = newChunk;
                     } else {
-                        // Жесткое склеивание через пробел
+                        // Склеивание через перенос строки для четких реплик
                         resultArea.value = cleanOldText + "\n" + newChunk;
                     }
                 } else {
-                    console.warn("Сервер вернул пустую строку. Восстанавливаем старый текст.");
                     resultArea.value = textBeforeUpload;
                 }
+                
+                // Сразу обновляем статистику, так как секунды Wit.ai изменились
+                setTimeout(updateStatsFromServer, 500);
 
             } catch (error) {
                 console.error('Ошибка:', error);
-                // Если сервер упал, возвращаем старый текст и дописываем ошибку в скобках
                 resultArea.value = textBeforeUpload + `\n[Ошибка обработки: ${error.message}]`;
             } finally {
-                // Возвращаем интерфейс в исходное рабочее состояние
                 loading.classList.add('hidden');
                 resultArea.classList.remove('opacity-50');
                 resultArea.disabled = false;
                 statusText.innerText = 'Нажмите, чтобы начать запись';
             }
         }
+
+        // ЛОГИКА ВЗАИМОДЕЙСТВИЯ С ГЕНЕРАТОРОМ ПРОТОКОЛОВ GEMINI / LLM
+        generateBtn.addEventListener('click', async () => {
+            const accumulatedText = resultArea.value.trim();
+
+            if (!accumulatedText) {
+                alert('Ошибка: Окно сырого драфта пустое. Надиктуйте текст исследования.');
+                return;
+            }
+
+            aiLoading.classList.remove('hidden');
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50');
+
+            try {
+                const response = await fetch(GENERATE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: accumulatedText })
+                });
+
+                if (!response.ok) throw new Error(`Ошибка генерации: ${response.status}`);
+
+                const data = await response.json();
+
+                if (data.status === "success" && data.protocol_text) {
+                    finalProtocolArea.value = data.protocol_text;
+                } else {
+                    throw new Error('Бэкенд прислал пустой ответ.');
+                }
+
+                // Обновляем статистику токенов после успешной генерации
+                setTimeout(updateStatsFromServer, 500);
+
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert(`Не удалось сгенерировать протокол: ${error.message}`);
+            } finally {
+                aiLoading.classList.add('hidden');
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50');
+            }
+        });
+
+        // Функция запроса и отрисовки легковесной статистики расходов
+        async function updateStatsFromServer() {
+            try {
+                const response = await fetch(STATS_URL);
+                if (!response.ok) return;
+                const data = await response.json();
+                
+                // Парсим Wit.ai данные
+                if (data.providers && data.providers.wit_ai) {
+                    statWit.innerText = `${data.providers.wit_ai.total_input} сек`;
+                }
+
+                // Парсим данные активного ИИ-провайдера (будь то mock или google)
+                const llmProvider = data.providers.google || data.providers.mock_provider;
+                if (llmProvider) {
+                    statLLM.innerText = `${llmProvider.total_input} / ${llmProvider.total_output}`;
+                }
+            } catch (e) {
+                console.warn('Статистика пока недоступна (файл лога пуст)');
+            }
+        }
+
+        // Ручное обновление статов
+        refreshStatsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            updateStatsFromServer();
+        });
+
+        // Копирование сырого драфта
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            if(!resultArea.value.trim()) return;
+            resultArea.select();
+            document.execCommand('copy');
+            alert('Сырой драфт скопирован!');
+        });
+
+        // Копирование финального заключения
+        copyFinalBtn.addEventListener('click', () => {
+            if(!finalProtocolArea.value.trim()) return;
+            finalProtocolArea.select();
+            document.execCommand('copy');
+            alert('Медицинский протокол экспертного уровня скопирован!');
+        });
         
         function updateTimer() {
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -207,14 +335,6 @@
             const secs = String(elapsed % 60).padStart(2, '0');
             timerElement.innerText = `${mins}:${secs}`;
         }
-
-        document.getElementById('copyBtn').addEventListener('click', () => {
-            resultArea.select();
-            document.execCommand('copy');
-            alert('Протокол скопирован в буфер обмена!');
-        });
     </script>
-
-    
 </body>
 </html>
