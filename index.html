@@ -181,7 +181,7 @@
                         resultArea.value = newChunk;
                     } else {
                         // Жесткое склеивание через пробел
-                        resultArea.value = cleanOldText + " " + newChunk;
+                        resultArea.value = cleanOldText + "\n" + newChunk;
                     }
                 } else {
                     console.warn("Сервер вернул пустую строку. Восстанавливаем старый текст.");
